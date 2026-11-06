@@ -1,0 +1,18 @@
+# Secrets
+.env
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Streamlit / Gradio local data
+.gradio/
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
