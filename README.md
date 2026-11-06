@@ -8,6 +8,17 @@ A Streamlit dashboard takes sensor readings from an industrial machine, estimate
 
 ## How it works
 
+```mermaid
+flowchart LR
+    A[Sensor readings] --> B[Streamlit dashboard]
+    B --> C[Random Forest model<br/>failure probability]
+    C --> B
+    B -- "Generate diagnosis" --> D[Groq · Llama 3.1<br/>diagnosis]
+    D --> B
+    B -- webhook --> E[n8n workflow]
+    E --> F[Maintenance operator]
+```
+
 1. The user enters sensor readings: machine type, air and process temperature, rotational speed, torque and tool wear.
 2. The model returns a failure probability and the dashboard shows the status: stable (< 30%), inspection recommended (30–70%) or critical alert (> 70%).
 3. "Generate Diagnosis & Notify" sends the readings and the risk score to the LLM, which writes a two-sentence diagnosis.
@@ -65,7 +76,7 @@ Python, pandas, scikit-learn, matplotlib, seaborn, Streamlit, Groq API (Llama 3.
 ## Running locally
 
 ```bash
-git clone https://github.com/<your-username>/predictive-maintenance-alerts.git
+git clone https://github.com/mireiaacss/predictive-maintenance-alerts.git
 cd predictive-maintenance-alerts
 
 python -m venv .venv

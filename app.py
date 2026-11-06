@@ -35,7 +35,7 @@ def get_setting(name: str) -> str | None:
 GROQ_API_KEY = get_setting("GROQ_API_KEY")
 N8N_WEBHOOK_URL = get_setting("N8N_WEBHOOK_URL")
 
-st.set_page_config(page_title="Control Predictiu | Cartonajes Ribas", layout="wide")
+st.set_page_config(page_title="Predictive Maintenance | ABC Company", layout="wide")
 
 st.markdown("""
     <style>
@@ -86,25 +86,25 @@ col_logo, col_titol = st.columns([1, 6])
 with col_logo:
     st.markdown("<div style='font-size: 52px; line-height: 1;'>🏭</div>", unsafe_allow_html=True)
 with col_titol:
-    st.markdown("<h2 style='margin-bottom: 0px; padding-bottom: 0px;'>Panell de Control Predictiu</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #2D5A27; font-weight: 600;'>Cartonajes Ribas</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='margin-bottom: 0px; padding-bottom: 0px;'>Predictive Maintenance Dashboard</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #2D5A27; font-weight: 600;'>ABC Company</p>", unsafe_allow_html=True)
 
 st.markdown("---")
 
 # --- SIDEBAR: sensor inputs ---
 with st.sidebar:
-    st.title("Panell de Control")
+    st.title("Control Panel")
     st.markdown("---")
-    st.subheader("🎛️ Sensors Màquina Plegadora")
+    st.subheader("🎛️ Folding Machine Sensors")
 
-    tipus = st.selectbox("Tipus de Màquina", ["L", "M", "H"])
-    temp_proces = st.slider("Temp. Procés [°C]", 30.0, 70.0, 38.0)
-    rpm = st.slider("Velocitat Rotació [rpm]", 1000, 3000, 2800)
+    tipus = st.selectbox("Machine Type", ["L", "M", "H"])
+    temp_proces = st.slider("Process Temp. [°C]", 30.0, 70.0, 38.0)
+    rpm = st.slider("Rotational Speed [rpm]", 1000, 3000, 2800)
     torque = st.slider("Torque [Nm]", 10.0, 80.0, 40.0)
 
-    with st.expander("Sensors Secundaris"):
-        temp_aire = st.slider("Temp. Aire [°C]", 20.0, 40.0, 25.0)
-        desgast = st.slider("Desgast Eina [min]", 0, 300, 130)
+    with st.expander("Secondary Sensors"):
+        temp_aire = st.slider("Air Temp. [°C]", 20.0, 40.0, 25.0)
+        desgast = st.slider("Tool Wear [min]", 0, 300, 130)
 
 # --- PREDICTION ---
 input_df = pd.DataFrame({
@@ -122,37 +122,37 @@ c1, c2 = st.columns([1, 1.2])
 
 with c1:
     with st.container(border=True):
-        st.subheader("Estat Operatiu")
+        st.subheader("Operating Status")
 
         if prob < 0.3:
-            st.success(f"✅ **SISTEMA ESTABLE** (Risc: {prob:.1%})")
+            st.success(f"✅ **SYSTEM STABLE** (Risk: {prob:.1%})")
         elif prob < 0.7:
-            st.warning(f"⚠️ **REVISIÓ RECOMANADA** (Risc: {prob:.1%})")
+            st.warning(f"⚠️ **INSPECTION RECOMMENDED** (Risk: {prob:.1%})")
         else:
-            st.error(f"🚨 **ALERTA CRÍTICA** (Risc: {prob:.1%})")
+            st.error(f"🚨 **CRITICAL ALERT** (Risk: {prob:.1%})")
 
         st.write("")
 
-        if st.button("Generar Diagnòstic i Notificar", use_container_width=True):
+        if st.button("Generate Diagnosis & Notify", use_container_width=True):
             client = get_groq_client()
             if client is None:
-                st.error("Falta configurar GROQ_API_KEY (vegeu el README).")
+                st.error("GROQ_API_KEY is not configured (see the README).")
             else:
                 diag = None
-                with st.spinner("Analitzant amb Groq..."):
+                with st.spinner("Analyzing with Groq..."):
                     try:
                         prompt = (
-                            f"La màquina Plegadora té Torque {torque}Nm i Temp {temp_proces}C. "
-                            f"Risc de fallada: {prob*100:.1f}%. Fes un diagnòstic de 2 frases en català."
+                            f"The folding machine has a torque of {torque} Nm and a process temperature of {temp_proces} °C. "
+                            f"Failure risk: {prob*100:.1f}%. Write a 2-sentence diagnosis in English."
                         )
                         res = client.chat.completions.create(
                             messages=[{"role": "user", "content": prompt}],
                             model="llama-3.1-8b-instant",
                         )
                         diag = res.choices[0].message.content
-                        st.info(f"**Assistent IA:** {diag}")
+                        st.info(f"**AI Assistant:** {diag}")
                     except Exception as e:
-                        st.error(f"Error de l'API de Groq: {e}")
+                        st.error(f"Groq API error: {e}")
 
                 # Send the alert to n8n (optional)
                 if diag and N8N_WEBHOOK_URL:
@@ -160,22 +160,22 @@ with c1:
                         requests.post(
                             N8N_WEBHOOK_URL,
                             json={
-                                "maquina_id": "PLEGADORA",
-                                "missatge": diag,
-                                "probabilitat": f"{prob:.1%}",
-                                "alarma": "CRÍTICA" if prob > 0.7 else "INFO",
+                                "machine_id": "FOLDING_MACHINE",
+                                "message": diag,
+                                "probability": f"{prob:.1%}",
+                                "alert_level": "CRITICAL" if prob > 0.7 else "INFO",
                             },
                             timeout=10,
                         ).raise_for_status()
-                        st.toast("Notificació enviada a l'operari!", icon="📩")
+                        st.toast("Notification sent to the operator!", icon="📩")
                     except requests.RequestException as e:
-                        st.warning(f"No s'ha pogut enviar la notificació a n8n: {e}")
+                        st.warning(f"Could not send the notification to n8n: {e}")
                 elif diag:
-                    st.caption("N8N_WEBHOOK_URL no configurat: notificació no enviada.")
+                    st.caption("N8N_WEBHOOK_URL is not set: notification not sent.")
 
 with c2:
     with st.container(border=True):
-        st.subheader("Telemetria en Temps Real")
+        st.subheader("Live Telemetry")
 
         t_data = st.session_state.hist_torque.copy()
         p_data = st.session_state.hist_temp.copy()
