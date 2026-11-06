@@ -4,8 +4,6 @@ Machine failure prediction with an AI-generated diagnosis and automated operator
 
 A Streamlit dashboard takes sensor readings from an industrial machine, estimates the probability of failure with a Random Forest model, generates a short diagnosis with an LLM (Llama 3.1 via Groq) and sends the alert to the maintenance operator through an n8n webhook.
 
-![Dashboard](docs/images/dashboard.png)
-
 ## How it works
 
 ```mermaid
